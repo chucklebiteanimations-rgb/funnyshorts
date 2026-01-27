@@ -136,7 +136,8 @@ def run_bot(upload_callback=None):
     app.add_handler(CommandHandler("upload_now", upload_now))
 
     print("Telegram Bot is polling...")
-    app.run_polling()
+    # stop_signals=None prevents the bot from trying to capture CTRL+C in a thread (which fails)
+    app.run_polling(stop_signals=None, close_loop=False)
 
 if __name__ == "__main__":
     # Asyncio run
