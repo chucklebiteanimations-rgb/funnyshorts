@@ -158,9 +158,8 @@ if __name__ == "__main__":
     
     # Start Telegram Poll in separate thread
     # Pass 'job' as callback for /upload_now
-    # (Note: we need to import 'job' or make it accessible if needed by bot commands, 
-    #  but for now assuming bot.run_polling handles its own logic)
-    bot_thread = threading.Thread(target=bot.run_polling)
+    # We use a lambda or partial to pass arguments to the target function
+    bot_thread = threading.Thread(target=lambda: bot.run_bot(job))
     bot_thread.daemon = True
     bot_thread.start()
 
