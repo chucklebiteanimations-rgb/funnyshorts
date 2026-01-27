@@ -1,7 +1,9 @@
 import os
 
 # Paths
-BASE_DIR = r"d:\funny shorts"
+# Paths
+# Get the directory where config.py is located (project root)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SHORTS_DIR = os.path.join(BASE_DIR, "shorts")
 ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
