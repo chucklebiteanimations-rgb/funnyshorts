@@ -150,14 +150,26 @@ def run_scheduler_loop():
 
 if __name__ == "__main__":
     database.init_db()
-    
-    # Start Scheduler in separate thread
+
+    # Start Scheduler in separate thread (Background Worker)
     sched_thread = threading.Thread(target=run_scheduler_loop)
     sched_thread.daemon = True
     sched_thread.start()
     
-    # Run Bot
+    # Start Telegram Poll in separate thread
     # Pass 'job' as callback for /upload_now
+    # (Note: we need to import 'job' or make it accessible if needed by bot commands, 
+    #  but for now assuming bot.run_polling handles its own logic)
+    bot_thread = threading.Thread(target=bot.run_polling)
+    bot_thread.daemon = True
+    bot_thread.start()
+
+    print("Background threads started. Launching Web Server...")
+
+    # Run Web Server in MAIN THREAD (Blocking)
+    # This must be the last thing, as it blocks forever.
+    # It ensures Render sees the app as "listening on port X".
+    keep_alive.run()
     print("Starting System...")
     try:
         bot.run_bot(job)
