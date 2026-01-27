@@ -13,6 +13,7 @@ import src.processor as processor
 import src.uploader as uploader
 import src.ai_content as ai_content
 import src.bot as bot
+import src.keep_alive as keep_alive
 
 def job():
     print(f"[{datetime.now()}] Job started...")
