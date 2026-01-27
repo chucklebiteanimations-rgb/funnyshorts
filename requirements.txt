@@ -1,0 +1,9 @@
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+ffmpeg-python
+python-telegram-bot
+schedule
+openai
+google-generativeai
+flask
