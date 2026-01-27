@@ -15,6 +15,14 @@ DB_PATH = os.path.join(SRC_DIR, "automation.db")
 # YouTube API
 CLIENT_SECRETS_FILE = os.path.join(BASE_DIR, "client_secrets.json")
 TOKEN_FILE = os.path.join(BASE_DIR, "token.json")
+
+# Render Secret Files Support
+# Render mounts secret files at /etc/secrets/filename
+if not os.path.exists(CLIENT_SECRETS_FILE) and os.path.exists("/etc/secrets/client_secrets.json"):
+    CLIENT_SECRETS_FILE = "/etc/secrets/client_secrets.json"
+    
+if not os.path.exists(TOKEN_FILE) and os.path.exists("/etc/secrets/token.json"):
+    TOKEN_FILE = "/etc/secrets/token.json"
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 
 # Bot Settings
