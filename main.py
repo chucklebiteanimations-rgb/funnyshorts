@@ -169,9 +169,5 @@ if __name__ == "__main__":
     # Run Web Server in MAIN THREAD (Blocking)
     # This must be the last thing, as it blocks forever.
     # It ensures Render sees the app as "listening on port X".
+    # This blocks forever.
     keep_alive.run()
-    print("Starting System...")
-    try:
-        bot.run_bot(job)
-    except KeyboardInterrupt:
-        print("Stopping...")
