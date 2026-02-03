@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 import os
 import sys
 
@@ -8,13 +8,11 @@ import config
 
 # Initialize Gemini
 GEMINI_AVAILABLE = False
-model = None
+client = None
 
 if hasattr(config, "GEMINI_API_KEY") and config.GEMINI_API_KEY and config.GEMINI_API_KEY != "YOUR_GEMINI_KEY_HERE":
     try:
-        genai.configure(api_key=config.GEMINI_API_KEY)
-        # Use gemini-2.0-flash as found in diagnostics
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        client = genai.Client(api_key=config.GEMINI_API_KEY)
         GEMINI_AVAILABLE = True
     except Exception as e:
         print(f"Error initializing Gemini: {e}")
@@ -35,7 +33,10 @@ def generate_text(prompt):
         return None
         
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model='gemini-2.0-flash', 
+            contents=prompt
+        )
         return response.text.strip()
     except Exception as e:
         print(f"Gemini API Error: {e}")
