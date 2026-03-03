@@ -54,14 +54,13 @@ def get_authenticated_service():
                flow = InstalledAppFlow.from_client_secrets_file(
                    config.CLIENT_SECRETS_FILE, config.SCOPES
                )
-               # Use run_local_server with port 80 to match http://localhost
-               # If port 80 makes it fail (permission denied), user needs to add http://localhost:8080 to console
                try:
-                   creds = flow.run_local_server(port=80, open_browser=True)
-               except OSError:
-                   print("Port 80 is unavailable. Trying port 8080...", flush=True)
-                   print("NOTE: You must add 'http://localhost:8080/' to your Google Cloud Console Redirect URIs.", flush=True)
+                   # Use port 8080 by default since port 80 often requires admin rights on Windows
+                   print("Starting local server on port 8080...", flush=True)
                    creds = flow.run_local_server(port=8080, open_browser=True)
+               except Exception as e:
+                   print(f"Port 8080 failed: {e}. Trying port 8888...", flush=True)
+                   creds = flow.run_local_server(port=8888, open_browser=True)
            except Exception as e:
                print(f"Manual Login Failed: {e}")
                bot.send_telegram_message(f"❌ Manual Login Failed: {e}")
