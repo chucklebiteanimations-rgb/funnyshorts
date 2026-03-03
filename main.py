@@ -17,8 +17,10 @@ import src.keep_alive as keep_alive
 
 import pytz
 
+import src.drive_manager as drive_manager
+
 def job():
-    print(f"[{datetime.now()}] Job started...")
+    print(f"[{datetime.now()}] Job started (Drive-Based Workflow)...")
     
     # 0. Check if Paused (Telegram Stop)
     if bot.is_paused():
@@ -29,88 +31,99 @@ def job():
     if not scheduler.check_schedule():
         return
 
-    # 2. Get content
-    day_folder, files = scheduler.get_current_day_number()
-    if not day_folder:
-        print("No content found.")
-        return
-
-    print(f"Processing {day_folder}...")
+    # 2. Get content from Drive
+    print("Drive: Checking for new content...")
+    drive_files = drive_manager.list_files_in_folder(config.DRIVE_FOLDER_ID)
     
-    # Upload one video per job execution
-    target_file = None
-    for f in files:
-        if not database.is_video_uploaded(f):
-            target_file = f
+    target_drive_file = None
+    for df in drive_files:
+        if not database.is_drive_video_uploaded(df['id']):
+            target_drive_file = df
             break
             
-    if not target_file:
-        print(f"All files in {day_folder} uploaded?")
+    if not target_drive_file:
+        print("No new content found on Google Drive.")
         return
 
-    full_path = os.path.join(config.SHORTS_DIR, day_folder, target_file)
-    print(f"Selected: {full_path}")
+    print(f"Drive: Selected {target_drive_file['name']} ({target_drive_file['id']})")
     
-    # 3. Process (Convert if needed, Watermark)
-    ready_path = os.path.join(config.BASE_DIR, "shorts", "temp_ready_" + target_file + ".mp4")
-    
+    # Define local paths
+    local_raw_path = os.path.join(config.BASE_DIR, "temp_download_" + target_drive_file['name'])
+    local_ready_path = os.path.join(config.BASE_DIR, "temp_ready_" + target_drive_file['name'].split('.')[0] + ".mp4")
+
+    # 3. Download from Drive
+    if not drive_manager.download_file(target_drive_file['id'], local_raw_path):
+        print("Drive: Download failed.")
+        return
+
+    # 4. Process (Convert if needed, Watermark)
     processing_success = False
-    if target_file.lower().endswith(('.jpg', '.jpeg', '.png')):
-        temp_video = os.path.join(config.BASE_DIR, "shorts", "temp_raw_" + target_file + ".mp4")
-        if processor.create_video_from_image(full_path, temp_video):
-            processing_success = processor.add_watermark(temp_video, "dummy", ready_path)
-            if os.path.exists(temp_video): os.remove(temp_video)
-                
-    elif target_file.lower().endswith('.mp4'):
-        processing_success = processor.add_watermark(full_path, "dummy", ready_path)
+    try:
+        if target_drive_file['name'].lower().endswith(('.jpg', '.jpeg', '.png')):
+            temp_video = os.path.join(config.BASE_DIR, "temp_conv_" + target_drive_file['name'].split('.')[0] + ".mp4")
+            if processor.create_video_from_image(local_raw_path, temp_video):
+                processing_success = processor.add_watermark(temp_video, "dummy", local_ready_path)
+                if os.path.exists(temp_video): os.remove(temp_video)
+        else:
+            # Assume it's a video file
+            processing_success = processor.add_watermark(local_raw_path, "dummy", local_ready_path)
+    except Exception as e:
+        print(f"Processing Error: {e}")
 
     if not processing_success:
         print("Processing failed.")
+        # Cleanup raw download even if failed
+        if os.path.exists(local_raw_path): os.remove(local_raw_path)
         return
 
-    # 4. Generate Metadata
-    title = ai_content.generate_title(target_file)
+    # 5. Generate Metadata
+    title = ai_content.generate_title(target_drive_file['name'])
     desc, tags = ai_content.get_description_and_tags(title)
     
-    # 5. Upload to YouTube
+    # 6. Upload to YouTube
     print(f"YouTube: Uploading as: {title}")
-    yt_video_id = uploader.upload_video(ready_path, title, desc, tags)
+    yt_video_id = uploader.upload_video(local_ready_path, title, desc, tags)
     
-    # 6. Upload to Instagram
+    # 7. Upload to Instagram
     print(f"Instagram: Uploading as Reel...")
     insta_media_id = None
     try:
         import src.insta_uploader as insta_uploader
-        # Use title + hashtags for IG caption
         ig_caption = f"{title}\n\n{tags}"
-        insta_media_id = insta_uploader.upload_reel(ready_path, ig_caption)
+        insta_media_id = insta_uploader.upload_reel(local_ready_path, ig_caption)
     except Exception as e:
         print(f"Instagram Upload Error: {e}")
 
-    # 7. Logging & Notifications
+    # 8. Logging & Notifications
     if yt_video_id or insta_media_id:
-        database.log_upload(target_file, day_folder, 
-                           "UPLOADED" if yt_video_id else "FAILED", yt_video_id,
-                           "UPLOADED" if insta_media_id else "FAILED", insta_media_id)
+        database.log_upload(target_drive_file['name'], 
+                           "UPLOADED" if yt_video_id else "FAILED", 
+                           drive_id=target_drive_file['id'],
+                           yt_id=yt_video_id,
+                           insta_status="UPLOADED" if insta_media_id else "FAILED", 
+                           insta_id=insta_media_id)
         
         # Notify via Telegram
         short_url = f"https://youtube.com/shorts/{yt_video_id}" if yt_video_id else "N/A"
         ig_status = "✅ Success" if insta_media_id else "❌ Failed"
         
         msg = (
-            f"🚀 <b>New Upload!</b>\n\n"
+            f"🚀 <b>New Upload From Drive!</b>\n\n"
             f"Title: {title}\n"
-            f"File: {target_file}\n\n"
+            f"File: {target_drive_file['name']}\n\n"
             f"📺 YouTube: {short_url}\n"
             f"📸 Instagram: {ig_status}"
         )
         bot.send_telegram_message(msg)
-        
-        # Cleanup
-        if "temp_ready_" in ready_path and os.path.exists(ready_path):
-            os.remove(ready_path)
     else:
         print("All Uploads Failed.")
+
+    # 9. FINAL CLEANUP (Crucial for Render)
+    print("Cleanup: Removing temporary files...")
+    if os.path.exists(local_raw_path):
+        os.remove(local_raw_path)
+    if os.path.exists(local_ready_path):
+        os.remove(local_ready_path)
 
 def run_scheduler_loop():
     print(f"Scheduler running with IST ({config.TIMEZONE}) Catch-up Logic...")

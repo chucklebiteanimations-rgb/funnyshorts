@@ -16,7 +16,8 @@ def init_db():
         CREATE TABLE IF NOT EXISTS uploads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             filename TEXT NOT NULL,
-            day_folder TEXT NOT NULL,
+            day_folder TEXT,
+            drive_id TEXT,
             upload_status TEXT NOT NULL, -- PENDING, UPLOADED, FAILED
             upload_time TIMESTAMP,
             youtube_id TEXT,
@@ -28,8 +29,7 @@ def init_db():
     
     # Simple migration for existing DB
     try:
-        cursor.execute("ALTER TABLE uploads ADD COLUMN insta_id TEXT")
-        cursor.execute("ALTER TABLE uploads ADD COLUMN insta_status TEXT")
+        cursor.execute("ALTER TABLE uploads ADD COLUMN drive_id TEXT")
     except:
         pass
     
@@ -40,14 +40,14 @@ def init_db():
 def get_connection():
     return sqlite3.connect(config.DB_PATH)
 
-def log_upload(filename, day_folder, yt_status, yt_id=None, insta_status=None, insta_id=None, error=None):
+def log_upload(filename, yt_status, drive_id=None, day_folder=None, yt_id=None, insta_status=None, insta_id=None, error=None):
     """Logs upload attempts for both YouTube and Instagram."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO uploads (filename, day_folder, upload_status, upload_time, youtube_id, insta_status, insta_id, error_message)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (filename, day_folder, yt_status, datetime.now(), yt_id, insta_status, insta_id, error))
+        INSERT INTO uploads (filename, day_folder, drive_id, upload_status, upload_time, youtube_id, insta_status, insta_id, error_message)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (filename, day_folder, drive_id, yt_status, datetime.now(), yt_id, insta_status, insta_id, error))
     conn.commit()
     conn.close()
 
@@ -55,7 +55,6 @@ def get_uploads_today_count():
     """Returns number of successful uploads today (checking YouTube as primary indicator)."""
     conn = get_connection()
     cursor = conn.cursor()
-    # Check for uploads where upload_time is today and status is UPLOADED
     today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     cursor.execute('''
         SELECT COUNT(*) FROM uploads 
@@ -74,6 +73,18 @@ def is_video_uploaded(filename):
         SELECT COUNT(*) FROM uploads 
         WHERE filename = ? AND upload_status = 'UPLOADED'
     ''', (filename,))
+    exists = cursor.fetchone()[0] > 0
+    conn.close()
+    return exists
+
+def is_drive_video_uploaded(drive_id):
+    """Checks if a specific Drive file has already been uploaded."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT COUNT(*) FROM uploads 
+        WHERE drive_id = ? AND (upload_status = 'UPLOADED' OR insta_status = 'UPLOADED')
+    ''', (drive_id,))
     exists = cursor.fetchone()[0] > 0
     conn.close()
     return exists

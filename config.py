@@ -23,7 +23,12 @@ if not os.path.exists(CLIENT_SECRETS_FILE) and os.path.exists("/etc/secrets/clie
     
 if not os.path.exists(TOKEN_FILE) and os.path.exists("/etc/secrets/token.json"):
     TOKEN_FILE = "/etc/secrets/token.json"
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/drive.readonly"
+]
+
+DRIVE_FOLDER_ID = "16lN0H-oSl6MUSFbkgR6hKZD4oA1Ylo4V"
 
 # Instagram
 INSTA_USERNAME = "chuckle.bites"
