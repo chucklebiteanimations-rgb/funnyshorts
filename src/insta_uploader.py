@@ -26,29 +26,30 @@ def get_client():
         cl.login(config.INSTA_USERNAME, config.INSTA_PASSWORD)
         cl.dump_settings(config.INSTA_SESSION_FILE)
         print("Instagram: Login successful.")
-        return cl
+        return cl, None
     except Exception as e:
-        print(f"Instagram: Login failed: {e}")
-        return None
+        error_msg = str(e)
+        print(f"Instagram: Login failed: {error_msg}")
+        return None, error_msg
 
 def upload_reel(video_path, caption):
     """
     Uploads a video as an Instagram Reel.
+    Returns: (media_id, error_message)
     """
-    cl = get_client()
+    cl, login_error = get_client()
     if not cl:
-        print("Instagram: Authentication failed. Cannot upload Reel.")
-        return None
+        return None, f"Login failed: {login_error}"
 
     try:
         print(f"Instagram: Uploading Reel {video_path}...")
-        # caption can include hashtags
         media = cl.clip_upload(video_path, caption)
         print(f"Instagram: Upload Complete! Media ID: {media.pk}")
-        return media.pk
+        return media.pk, None
     except Exception as e:
-        print(f"Instagram: Upload failed: {e}")
-        return None
+        error_msg = str(e)
+        print(f"Instagram: Upload failed: {error_msg}")
+        return None, error_msg
 
 if __name__ == "__main__":
     # Test block

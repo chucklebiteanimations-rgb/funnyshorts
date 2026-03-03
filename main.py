@@ -43,6 +43,7 @@ def job():
             
     if not target_drive_file:
         print("No new content found on Google Drive.")
+        bot.send_telegram_message("📂 <b>Drive Update:</b> No new videos found to upload.")
         return
 
     print(f"Drive: Selected {target_drive_file['name']} ({target_drive_file['id']})")
@@ -54,6 +55,7 @@ def job():
     # 3. Download from Drive
     if not drive_manager.download_file(target_drive_file['id'], local_raw_path):
         print("Drive: Download failed.")
+        bot.send_telegram_message(f"❌ <b>Download Failed:</b> Could not download {target_drive_file['name']} from Drive.")
         return
 
     # 4. Process (Convert if needed, Watermark)
@@ -72,6 +74,7 @@ def job():
 
     if not processing_success:
         print("Processing failed.")
+        bot.send_telegram_message(f"⚠️ <b>Processing Failed:</b> Error while watermarking or converting {target_drive_file['name']}.")
         # Cleanup raw download even if failed
         if os.path.exists(local_raw_path): os.remove(local_raw_path)
         return
@@ -87,12 +90,14 @@ def job():
     # 7. Upload to Instagram
     print(f"Instagram: Uploading as Reel...")
     insta_media_id = None
+    insta_error = None
     try:
         import src.insta_uploader as insta_uploader
         ig_caption = f"{title}\n\n{tags}"
-        insta_media_id = insta_uploader.upload_reel(local_ready_path, ig_caption)
+        insta_media_id, insta_error = insta_uploader.upload_reel(local_ready_path, ig_caption)
     except Exception as e:
-        print(f"Instagram Upload Error: {e}")
+        insta_error = str(e)
+        print(f"Instagram Upload Error: {insta_error}")
 
     # 8. Logging & Notifications
     if yt_video_id or insta_media_id:
@@ -101,11 +106,12 @@ def job():
                            drive_id=target_drive_file['id'],
                            yt_id=yt_video_id,
                            insta_status="UPLOADED" if insta_media_id else "FAILED", 
-                           insta_id=insta_media_id)
+                           insta_id=insta_media_id,
+                           error=insta_error)
         
         # Notify via Telegram
         short_url = f"https://youtube.com/shorts/{yt_video_id}" if yt_video_id else "N/A"
-        ig_status = f"✅ Success (ID: {insta_media_id})" if insta_media_id else "❌ Failed"
+        ig_status = f"✅ Success (ID: {insta_media_id})" if insta_media_id else f"❌ Failed: {insta_error}"
         
         msg = (
             f"🚀 <b>New Upload From Drive!</b>\n\n"
