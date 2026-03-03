@@ -105,7 +105,7 @@ def job():
         
         # Notify via Telegram
         short_url = f"https://youtube.com/shorts/{yt_video_id}" if yt_video_id else "N/A"
-        ig_status = "✅ Success" if insta_media_id else "❌ Failed"
+        ig_status = f"✅ Success (ID: {insta_media_id})" if insta_media_id else "❌ Failed"
         
         msg = (
             f"🚀 <b>New Upload From Drive!</b>\n\n"
@@ -174,6 +174,12 @@ if __name__ == "__main__":
     bot_thread.start()
 
     print("Background threads started. Launching Web Server...")
+    
+    # Send startup notification
+    try:
+        bot.send_telegram_message(f"🚀 <b>Shorts Automation Bot Started!</b>\n📍 Platform: Render\n⏰ Timezone: {config.TIMEZONE}")
+    except:
+        pass
 
     # Run Web Server in MAIN THREAD (Blocking)
     # This must be the last thing, as it blocks forever.

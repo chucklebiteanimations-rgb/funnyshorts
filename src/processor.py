@@ -37,11 +37,12 @@ def create_video_from_image(image_path, output_path, duration=60):
             .filter('zoompan', z='min(zoom+0.0005,1.2)', d=duration*30, s='720x1280', fps=30)
         )
 
+        # Add silent audio stream
+        audio_silence = ffmpeg.input('anullsrc=channel_layout=stereo:sample_rate=44100', f='lavfi')
+
         output = (
-            processed
-            .output(output_path, t=duration, vcodec='libx264', pix_fmt='yuv420p', r=30, 
-                    preset='ultrafast', video_bitrate='1000k', 
-                    movflags='+faststart')
+            ffmpeg.output(processed, audio_silence, output_path, t=duration, vcodec='libx264', acodec='aac', pix_fmt='yuv420p', r=30, 
+                    preset='ultrafast', video_bitrate='1000k')
             .overwrite_output()
         )
         
