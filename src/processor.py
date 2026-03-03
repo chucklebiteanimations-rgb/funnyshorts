@@ -32,15 +32,16 @@ def create_video_from_image(image_path, output_path, duration=60):
         
         processed = (
             input_stream
-            .filter('scale', w=-1, h=1920)
-            .filter('crop', w=1080, h=1920)
-             # Zoom in slowly to 1.1x over the duration
-            .filter('zoompan', z='min(zoom+0.0005,1.2)', d=duration*30, s='1080x1920', fps=30)
+            .filter('scale', w=-1, h=1280)  # Downscale to 720p height for memory
+            .filter('crop', w=720, h=1280)
+            .filter('zoompan', z='min(zoom+0.0005,1.2)', d=duration*30, s='720x1280', fps=30)
         )
 
         output = (
             processed
-            .output(output_path, t=duration, vcodec='libx264', pix_fmt='yuv420p', r=30)
+            .output(output_path, t=duration, vcodec='libx264', pix_fmt='yuv420p', r=30, 
+                    preset='ultrafast', video_bitrate='1000k', 
+                    movflags='+faststart')
             .overwrite_output()
         )
         
@@ -57,40 +58,30 @@ def create_video_from_image(image_path, output_path, duration=60):
 
 def add_watermark(video_path, watermark_path, output_path):
     """
-    Overlays a TEXT watermark on the video (Top Left).
-    Ignores watermark_path (kept for compatibility) and uses fixed text.
+    Overlays a TEXT watermark on the video.
     """
     try:
         main = ffmpeg.input(video_path)
         
-        # Drawtext filter
-        # text='ChuckleBites'
-        # x=10 (padding from left)
-        # y=10 (padding from top)
-        # fontsize=50 (visible on 1080p)
-        # fontcolor=white
-        # shadowcolor=black (for visibility)
-        # shadowx=2, shadowy=2
-        # fontfile: Try Arial. If it fails, ffmpeg often has a default or needs a path.
-        # On Windows: C:/Windows/Fonts/arial.ttf
-        
+        # Use simpler drawtext without specific font file to avoid errors on Linux
         processed = main.filter(
             'drawtext',
             text='ChuckleBites',
             x=20,
             y=20,
-            fontsize=35,
+            fontsize=24,
             fontcolor='white@0.3',
             shadowcolor='black@0.2',
             shadowx=2,
-            shadowy=2,
-            fontfile='C:/Windows/Fonts/arial.ttf' 
+            shadowy=2
         )
         
         audio = main.audio
         
         output = (
-            ffmpeg.output(processed, audio, output_path, vcodec='libx264', acodec='aac', pix_fmt='yuv420p', r=30)
+            ffmpeg.output(processed, audio, output_path, 
+                         vcodec='libx264', acodec='aac', pix_fmt='yuv420p', r=30, 
+                         preset='ultrafast', video_bitrate='1000k')
             .overwrite_output()
         )
         
