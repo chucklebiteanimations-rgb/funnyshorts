@@ -4,7 +4,6 @@ google-auth-httplib2
 python-telegram-bot
 ffmpeg-python
 Pillow
-sqlite3
 instagrapi
 pytz
 requests
@@ -13,3 +12,4 @@ schedule
 openai
 google-genai
 flask
+typing-extensions
