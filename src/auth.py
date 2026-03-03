@@ -25,23 +25,26 @@ def get_authenticated_service():
         try:
             creds = Credentials.from_authorized_user_file(config.TOKEN_FILE, config.SCOPES)
         except Exception as e:
-            print(f"Error loading token.json: {e}")
+            print(f"Error loading token.json from {config.TOKEN_FILE}: {e}")
             creds = None
+    else:
+        print(f"Token file NOT FOUND at: {config.TOKEN_FILE}")
 
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            print("Credentials expired, refreshing...", flush=True)
+            print("Credentials expired, attempting to refresh...", flush=True)
             try:
                 creds.refresh(Request())
+                print("Token refresh successful!")
             except Exception as e:
                 print(f"Error refreshing token: {e}", flush=True)
-                msg = f"🚨 **CRITICAL ALERT** 🚨\n\nGoogle Token Refresh Failed!\nError: {e}\n\nPlease log in manually on your PC to generate a new `token.json`."
+                msg = f"🚨 **CRITICAL ALERT** 🚨\n\nGoogle Token Refresh Failed!\nError: {e}\n\nPlease update your `token.json` on Render with a newly generated one."
                 bot.send_telegram_message(msg)
                 creds = None
 
         if not creds:
-           print("No valid credentials found. Starting new OAuth flow...", flush=True)
+           print(f"No valid credentials. Action Required alert sent.", flush=True)
            
            # Alert user that manual interaction is needed
            msg = "⚠️ **Action Required** ⚠️\n\nBot needs to log in to Google. If this is a VPS, you must do this on your local PC and upload the `token.json` file."
