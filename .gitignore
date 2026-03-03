@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+
+.env
+venv/
+env/
+.idea/
+.vscode/
+token.json
+client_secrets.json
+shorts/
+logs/
+*.db
+ffmpeg.zip
+ffmpeg_v2.zip
+test_video.mp4
+test_final.mp4

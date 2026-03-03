@@ -1,0 +1,16 @@
+instagrapi
+pytz
+requests
+schedule
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+python-telegram-bot
+ffmpeg-python
+Pillow
+sqlite3 
+# (sqlite3 is usually built-in but sometimes listed for clear dependency)
+schedule
+openai
+google-genai
+flask
