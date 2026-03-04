@@ -48,9 +48,10 @@ def job():
 
     print(f"Drive: Selected {target_drive_file['name']} ({target_drive_file['id']})")
     
-    # Define local paths
-    local_raw_path = os.path.join(config.BASE_DIR, "temp_download_" + target_drive_file['name'])
-    local_ready_path = os.path.join(config.BASE_DIR, "temp_ready_" + target_drive_file['name'].split('.')[0] + ".mp4")
+    # Define unique local paths using Drive File ID
+    file_id = target_drive_file['id']
+    local_raw_path = os.path.join(config.BASE_DIR, f"temp_raw_{file_id}_{target_drive_file['name']}")
+    local_ready_path = os.path.join(config.BASE_DIR, f"temp_ready_{file_id}.mp4")
 
     # 3. Download from Drive
     if not drive_manager.download_file(target_drive_file['id'], local_raw_path):
@@ -62,7 +63,7 @@ def job():
     processing_success = False
     try:
         if target_drive_file['name'].lower().endswith(('.jpg', '.jpeg', '.png')):
-            temp_video = os.path.join(config.BASE_DIR, "temp_conv_" + target_drive_file['name'].split('.')[0] + ".mp4")
+            temp_video = os.path.join(config.BASE_DIR, f"temp_conv_{file_id}.mp4")
             if processor.create_video_from_image(local_raw_path, temp_video):
                 processing_success = processor.add_watermark(temp_video, "dummy", local_ready_path)
                 if os.path.exists(temp_video): os.remove(temp_video)

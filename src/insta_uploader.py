@@ -29,6 +29,8 @@ def get_client():
         return cl, None
     except Exception as e:
         error_msg = str(e)
+        if "Challenge" in error_msg or "ChallengeChoice" in error_msg:
+             error_msg = "Instagram Challenge! (Bot cannot read email codes on Render). Please log in once from your local PC to verify the account."
         print(f"Instagram: Login failed: {error_msg}")
         return None, error_msg
 
