@@ -70,9 +70,14 @@ def get_authenticated_service():
                raise e
 
         # Save the credentials for the next run
-        print(f"Saving new credentials to {config.TOKEN_FILE}...", flush=True)
-        with open(config.TOKEN_FILE, "w") as token:
+        # We ALWAYS save to the local path (config.BASE_DIR/token.json) because /etc/secrets is read-only
+        writable_token_path = os.path.join(config.BASE_DIR, "token.json")
+        print(f"Saving new credentials to {writable_token_path}...", flush=True)
+        with open(writable_token_path, "w") as token:
             token.write(creds.to_json())
+            
+        # Update config so subsequent calls in the same process use the new path
+        config.TOKEN_FILE = writable_token_path
 
     return creds
 

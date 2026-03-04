@@ -14,14 +14,19 @@ DB_PATH = os.path.join(SRC_DIR, "automation.db")
 
 # YouTube API
 CLIENT_SECRETS_FILE = os.path.join(BASE_DIR, "client_secrets.json")
+# This is the writable path we will ALWAYS save to on Render
 TOKEN_FILE = os.path.join(BASE_DIR, "token.json")
 
-# Render Secret Files Support (Prioritized)
+# Render Secret Files Support (Read-Only)
+SECRET_TOKEN_FILE = "/etc/secrets/token.json" if os.path.exists("/etc/secrets/token.json") else None
+
 if os.path.exists("/etc/secrets/client_secrets.json"):
     CLIENT_SECRETS_FILE = "/etc/secrets/client_secrets.json"
     
-if os.path.exists("/etc/secrets/token.json"):
-    TOKEN_FILE = "/etc/secrets/token.json"
+# If the local token doesn't exist but the secret one does, we load from secret initially
+if not os.path.exists(TOKEN_FILE) and SECRET_TOKEN_FILE:
+    TOKEN_FILE = SECRET_TOKEN_FILE
+
 SCOPES = [
     "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/drive.readonly"
